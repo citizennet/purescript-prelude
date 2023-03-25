@@ -1,4 +1,4 @@
-module Pre
+module CitizenNet.Prelude
   ( module Control.Alt
   , module Control.Monad.Error.Class
   , module Control.Monad.Except.Trans

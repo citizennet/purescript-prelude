@@ -7,7 +7,7 @@
 #
 # We also want some place to store all the excess build artifacts.
 # This might be test outputs, or it could be some intermediate artifacts.
-# For this, we use the `$(PRE_BUILD_DIR)` directory.
+# For this, we use the `$(PRELUDE_BUILD_DIR)` directory.
 # Assuming the different tools allow us to put their artifacts in here,
 # we can clean up builds really easily: delete this directory.
 #
@@ -62,26 +62,26 @@
 ROOT_DIR ?= $(shell pwd)
 
 # Relative path to this directory from $ROOT_DIR
-# If called from a parent Makefile, will resolve to something like `lib/pre`
-PRE_DIR ?= .
+# If called from a parent Makefile, will resolve to something like `lib/prelude`
+PRELUDE_DIR ?= .
 
 # Library-specific constants
-PRE_BUILD_DIR := $(PRE_DIR)/.build
-PRE_FORMAT_PURS_TIDY_STAMP := $(PRE_BUILD_DIR)/.format-pre-purs-tidy-stamp
-PRE_PURS := $(shell find $(PRE_DIR) -name '*.purs' -type f)
-PRE_SPAGO_CONFIG := $(PRE_DIR)/spago.dhall
-PRE_SRCS := $(shell find $(PRE_DIR) \( -name '*.purs' -o -name '*.js' \) -type f)
-ROOT_DIR_RELATIVE := $(shell echo '$(PRE_DIR)' | sed 's \([^./]\+\) .. g')
+PRELUDE_BUILD_DIR := $(PRELUDE_DIR)/.build
+PRELUDE_FORMAT_PURS_TIDY_STAMP := $(PRELUDE_BUILD_DIR)/.format-prelude-purs-tidy-stamp
+PRELUDE_PURS := $(shell find $(PRELUDE_DIR) -name '*.purs' -type f)
+PRELUDE_SPAGO_CONFIG := $(PRELUDE_DIR)/spago.dhall
+PRELUDE_SRCS := $(shell find $(PRELUDE_DIR) \( -name '*.purs' -o -name '*.js' \) -type f)
+ROOT_DIR_RELATIVE := $(shell echo '$(PRELUDE_DIR)' | sed 's \([^./]\+\) .. g')
 
 # Variables we want to inherit from a parent Makefile if it exists
 OUTPUT_DIR ?= $(ROOT_DIR)/output
 SPAGO_DIR ?= $(ROOT_DIR)/.spago
-SPAGO_PACKAGES_CONFIG ?= $(PRE_DIR)/packages.dhall
+SPAGO_PACKAGES_CONFIG ?= $(PRELUDE_DIR)/packages.dhall
 SPAGO_STAMP ?= $(SPAGO_DIR)/.stamp
 
 # Commands and variables
 PSA ?= psa
-PSA_ARGS ?= --censor-lib --stash=$(PRE_BUILD_DIR)/.psa_stash --strict --is-lib=$(SPAGO_DIR) --censor-codes=HiddenConstructors
+PSA_ARGS ?= --censor-lib --stash=$(PRELUDE_BUILD_DIR)/.psa_stash --strict --is-lib=$(SPAGO_DIR) --censor-codes=HiddenConstructors
 PURS_TIDY ?= purs-tidy
 PURS_TIDY_CMD ?= check
 RTS_ARGS ?= +RTS -N2 -A800m -RTS
@@ -93,31 +93,31 @@ CYAN ?= \033[0;36m
 RESET ?= \033[0;0m
 
 # Variables we add to
-ALL_SRCS += $(PRE_SRCS)
-CLEAN_DEPENDENCIES += clean-pre
-FORMAT_DEPENDENCIES += $(PRE_FORMAT_PURS_TIDY_STAMP)
-SPAGO_CONFIGS += $(PRE_SPAGO_CONFIG)
+ALL_SRCS += $(PRELUDE_SRCS)
+CLEAN_DEPENDENCIES += clean-prelude
+FORMAT_DEPENDENCIES += $(PRELUDE_FORMAT_PURS_TIDY_STAMP)
+SPAGO_CONFIGS += $(PRELUDE_SPAGO_CONFIG)
 
-.DEFAULT_GOAL := build-pre
+.DEFAULT_GOAL := build-prelude
 
-$(PRE_BUILD_DIR) $(OUTPUT_DIR):
+$(PRELUDE_BUILD_DIR) $(OUTPUT_DIR):
 	mkdir -p $@
 
-$(PRE_BUILD_DIR)/help-unsorted: $(MAKEFILE_LIST) | $(PRE_BUILD_DIR)
+$(PRELUDE_BUILD_DIR)/help-unsorted: $(MAKEFILE_LIST) | $(PRELUDE_BUILD_DIR)
 	@grep \
 		--extended-regexp '^[A-Za-z_-]+:.*?## .*$$' \
 		--no-filename \
 		$(MAKEFILE_LIST) \
 		> $@
 
-$(PRE_BUILD_DIR)/help: $(PRE_BUILD_DIR)/help-unsorted | $(PRE_BUILD_DIR)
+$(PRELUDE_BUILD_DIR)/help: $(PRELUDE_BUILD_DIR)/help-unsorted | $(PRELUDE_BUILD_DIR)
 	@sort $< > $@
 
-$(PRE_FORMAT_PURS_TIDY_STAMP): $(PRE_PURS) | $(PRE_BUILD_DIR)
-	$(PURS_TIDY) $(PURS_TIDY_CMD) $(PRE_DIR)/src
+$(PRELUDE_FORMAT_PURS_TIDY_STAMP): $(PRELUDE_PURS) | $(PRELUDE_BUILD_DIR)
+	$(PURS_TIDY) $(PURS_TIDY_CMD) $(PRELUDE_DIR)/src
 	@touch $@
 
-$(PRE_SPAGO_CONFIG): gen-spago-config-pre $(PRE_DIR)/spago.template.dhall
+$(PRELUDE_SPAGO_CONFIG): gen-spago-config-prelude $(PRELUDE_DIR)/spago.template.dhall
 
 $(SPAGO_STAMP): $(SPAGO_PACKAGES_CONFIG) $(SPAGO_CONFIGS)
 	# `spago` doesn't clean up after itself if different versions are installed, so we do it ourselves.
@@ -125,49 +125,49 @@ $(SPAGO_STAMP): $(SPAGO_PACKAGES_CONFIG) $(SPAGO_CONFIGS)
 	$(SPAGO) install $(RTS_ARGS)
 	touch $@
 
-.PHONY: build-pre
-build-pre: $(PRE_SPAGO_CONFIG) $(SPAGO_BUILD_DEPENDENCIES) | $(PRE_BUILD_DIR) ## Build the `pre` package
-	$(SPAGO) --config $(PRE_SPAGO_CONFIG) build --purs-args '$(PSA_ARGS) $(RTS_ARGS)'
+.PHONY: build-prelude
+build-prelude: $(PRELUDE_SPAGO_CONFIG) $(SPAGO_BUILD_DEPENDENCIES) | $(PRELUDE_BUILD_DIR) ## Build the `prelude` package
+	$(SPAGO) --config $(PRELUDE_SPAGO_CONFIG) build --purs-args '$(PSA_ARGS) $(RTS_ARGS)'
 
-.PHONY: check-format-pre
-check-format-pre: PURS_TIDY_CMD=check
-check-format-pre: $(PRE_FORMAT_PURS_TIDY_STAMP) ## Validate formatting of the `pre` directory
+.PHONY: check-format-prelude
+check-format-prelude: PURS_TIDY_CMD=check
+check-format-prelude: $(PRELUDE_FORMAT_PURS_TIDY_STAMP) ## Validate formatting of the `prelude` directory
 
 # Since some of these variables are shared with the root Makefile.
-# Running `clean-pre` from root might have the unintended consequence
+# Running `clean-prelude` from root might have the unintended consequence
 # of cleaning more than intended. Specifically, it will remove the
 # root $OUTPUT_DIR, and $SPAGO_DIR.
-.PHONY: clean-pre
-clean-pre: clean-spago-config-pre
+.PHONY: clean-prelude
+clean-prelude: clean-spago-config-prelude
 	rm -fr \
-		$(PRE_BUILD_DIR) \
+		$(PRELUDE_BUILD_DIR) \
 		$(OUTPUT_DIR) \
 		$(SPAGO_DIR)
 
-.PHONY: clean-spago-config-pre
-clean-spago-config-pre:
-	rm -f $(PRE_SPAGO_CONFIG)
+.PHONY: clean-spago-config-prelude
+clean-spago-config-prelude:
+	rm -f $(PRELUDE_SPAGO_CONFIG)
 
-.PHONY: format-pre
-format-pre: PURS_TIDY_CMD=format-in-place
-format-pre: $(PRE_FORMAT_PURS_TIDY_STAMP) ## Format the `pre` directory
+.PHONY: format-prelude
+format-prelude: PURS_TIDY_CMD=format-in-place
+format-prelude: $(PRELUDE_FORMAT_PURS_TIDY_STAMP) ## Format the `prelude` directory
 
-.PHONY: gen-spago-config-pre
-gen-spago-config-pre: $(PRE_DIR)/spago.template.dhall | $(PRE_BUILD_DIR)
+.PHONY: gen-spago-config-prelude
+gen-spago-config-prelude: $(PRELUDE_DIR)/spago.template.dhall | $(PRELUDE_BUILD_DIR)
 	@sed \
-		's+{{PACKAGES_DIR}}+$(ROOT_DIR_RELATIVE)+g; s+{{SOURCES_DIR}}+$(PRE_DIR)+g; s+{{GENERATED_DOC}}+This config is auto-generated by make.\nIf the paths are wrong, try deleting it and running make again.+g' \
-		$(PRE_DIR)/spago.template.dhall > $(PRE_BUILD_DIR)/spago.dhall
-	@if cmp -s -- '$(PRE_BUILD_DIR)/spago.dhall' '$(PRE_SPAGO_CONFIG)'; then \
-		echo 'Nothing to do for $(PRE_SPAGO_CONFIG)'; \
+		's+{{PACKAGES_DIR}}+$(ROOT_DIR_RELATIVE)+g; s+{{SOURCES_DIR}}+$(PRELUDE_DIR)+g; s+{{GENERATED_DOC}}+This config is auto-generated by make.\nIf the paths are wrong, try deleting it and running make again.+g' \
+		$(PRELUDE_DIR)/spago.template.dhall > $(PRELUDE_BUILD_DIR)/spago.dhall
+	@if cmp -s -- '$(PRELUDE_BUILD_DIR)/spago.dhall' '$(PRELUDE_SPAGO_CONFIG)'; then \
+		echo 'Nothing to do for $(PRELUDE_SPAGO_CONFIG)'; \
 	else \
-		echo 'Generating new $(PRE_SPAGO_CONFIG)'; \
-		cp $(PRE_BUILD_DIR)/spago.dhall $(PRE_SPAGO_CONFIG); \
+		echo 'Generating new $(PRELUDE_SPAGO_CONFIG)'; \
+		cp $(PRELUDE_BUILD_DIR)/spago.dhall $(PRELUDE_SPAGO_CONFIG); \
 	fi
 
 .PHONY: help
-help: $(PRE_BUILD_DIR)/help ## Display this help message
+help: $(PRELUDE_BUILD_DIR)/help ## Display this help message
 	@awk 'BEGIN {FS = ":.*?## "}; {printf "$(CYAN)%-30s$(RESET) %s\n", $$1, $$2}' $<
 
 .PHONY: variable-%
-variable-%: ## Display the value of a variable; e.g. `make variable-PRE_BUILD_DIR`
+variable-%: ## Display the value of a variable; e.g. `make variable-PRELUDE_BUILD_DIR`
 	@echo '$*=$($*)'
