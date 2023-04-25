@@ -11,6 +11,7 @@ module CitizenNet.Prelude
   , module Data.Either
   , module Data.Enum
   , module Data.Foldable
+  , module Data.Generic.Rep
   , module Data.Lens
   , module Data.Map
   , module Data.Maybe
@@ -66,6 +67,7 @@ import Data.Either (Either(..), hush, note)
 import Data.Enum (class BoundedEnum, class Enum)
 import Data.Foldable (class Foldable, find, findMap, fold, foldM, foldMap, foldl, for_)
 import Data.FoldableWithIndex (class FoldableWithIndex, foldMapWithIndex)
+import Data.Generic.Rep (class Generic)
 import Data.Lens (Lens, Lens', lens)
 import Data.Map (Map, SemigroupMap(..))
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
